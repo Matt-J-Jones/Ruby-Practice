@@ -10,6 +10,7 @@ def start_screen
 
   EXPECTED
   puts (croc_str)
+  gets.chomp
 end
 
 def end_screen
@@ -25,16 +26,22 @@ def end_screen
   puts(end_str)
 end
  
-def check_loc(symbol, river, location)
+def check_loc(symbol, river)
+  # checks the players current location against the river map
+  # returns true if over specified symbol (used for checking crocodiles and bonuses)
+  
   river_temp = river.split(",")
-  if river_temp[location[1]][location[0]] == symbol
+  if river_temp[@player_xy_location[1]][@player_xy_location[0]] == symbol
     return true
   else
     return false
   end
 end
 
-def river_length(river, player_xy_location)
+def river_length(river)
+  # Removes the top line of the river, randomly generates a new line to replace it
+  # appends new line to the bottom of the river. Returns new river.
+  
   river_temp = river.split(",")
   river_temp.shift()
   
@@ -53,37 +60,46 @@ def river_length(river, player_xy_location)
   
   river = river_temp.join(",")
   
-  draw_river(river, player_xy_location[0], player_xy_location[1])
+  draw_river(river)
   
   return river
 end
 
-def draw_river(river, x_loc, y_loc)
+def draw_river(river)
+  # Draws the river from the input variable
   system("clear") || system("cls")
   river_temp = river.split(",")
-  river_temp[y_loc][x_loc] = "P"
+  river_temp[@player_xy_location[1]][@player_xy_location[0]] = "P"
   river_temp.each { |layer|
     puts(layer)
   }
 end
 
-def add_new_player(score)
+def add_new_player
+  # adds new players name to the scoreboard
+  # if players name is over 4 charaters, cuts off after 4th
+  # if players name is under 5, it fills in the rest with underscores
+  # returns name and score
+  
   new_player = []
 
   puts("Enter name")
   name = gets.chomp[0,4].upcase
   if name.length < 4
+    blanks = 4 - name.length
+    blanks.times {
     name = name + "_"
+    }
   end
 
   new_player.push(name)
-  new_player.push(score)
+  new_player.push(@score)
   
   return new_player
 end
 
 def load_leaderboard
-  
+  # loads leaderboard from file, splits into array of name (str) and score (int)
   file = File.open("leaderboard.txt", "r")
   file_data = file.read
   file.close
@@ -104,6 +120,7 @@ def load_leaderboard
 end
 
 def save_leaderboard(new_leaderboard)
+  # prints leaderboard to console and updates leaderboard file
   leaderboard_str = ""
   system("clear") || system("cls")
   puts("HIGHSCORES:")
@@ -119,11 +136,13 @@ def save_leaderboard(new_leaderboard)
   File.open("leaderboard.txt", "w"){ |f| f.write(leaderboard_str) }
 end
 
-def highscore(score)
-    
+def highscore
+  # loads current leaderboard, adds in player name and score.
+  # sorts leaderboard, and pops off lowest score
+  
   leaderboard = load_leaderboard
 
-  leaderboard.push(add_new_player(score))
+  leaderboard.push(add_new_player)
 
   new_leaderboard = leaderboard.sort_by { |e| -e[1]}
 
@@ -135,43 +154,42 @@ def highscore(score)
 end
 
 start_screen
-gets.chomp
+
 
 river = "-------,---C---,-CC-CC-,CCC-CCC,---C---"
-loop = true
-player_xy_location = [3, 0]
-draw_river(river, player_xy_location[0], player_xy_location[1])
-score = 0
+@player_xy_location = [3, 0]
+draw_river(river)
+@score = 0
 
-while loop
+while true
   puts("")
-  puts("Current score: #{score}")
+  puts("Current score: #{@score}")
   puts("Type left, right or neither")
   direction = gets.chomp
   puts("")
   
   if direction == "left"
-    player_xy_location[0] -= 1
+    @player_xy_location[0] -= 1
   elsif direction == "right"
-    player_xy_location[0] += 1
+    @player_xy_location[0] += 1
   elsif direction == "neither"
-    player_xy_location[0] = player_xy_location[0]
+    @player_xy_location[0] = @player_xy_location[0]
   else 
-    player_xy_location[0] = player_xy_location[0]
+    next
   end
   
-  score = score += 1
-  river = river_length(river, player_xy_location)
+  @score += 1
+  river = river_length(river)
   
-  if check_loc("@", river, player_xy_location) == true
-    score += 10
+  if check_loc("@", river) == true
+    @score += 10
   end
   
-  if check_loc("C", river, player_xy_location) == true
+  if check_loc("C", river) == true
     system("clear") || system("cls")
     puts("You were eaten.")
-    puts("Your final score is: #{score}")
-    highscore(score)
+    puts("Your final score is: #{@score}")
+    highscore
     end_screen
     gets.chomp
     break
